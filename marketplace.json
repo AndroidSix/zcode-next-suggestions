@@ -1,0 +1,27 @@
+{
+  "name": "zcode-next-suggestions",
+  "owner": {
+    "name": "AndroidSix",
+    "url": "https://github.com/AndroidSix"
+  },
+  "plugins": [
+    {
+      "name": "zcode-next-suggestions",
+      "source": "./",
+      "version": "0.1.0",
+      "description": "Suggest up to 3 next prompts after a turn, then continue with /next N.",
+      "displayName": "Next Suggestions",
+      "displayName_i18n": {
+        "zh-CN": "下一步建议"
+      },
+      "description_i18n": {
+        "zh-CN": "对话结束后给出编号建议，用 /next N 一键续发"
+      },
+      "category": "productivity",
+      "author": {
+        "name": "AndroidSix",
+        "url": "https://github.com/AndroidSix"
+      }
+    }
+  ]
+}

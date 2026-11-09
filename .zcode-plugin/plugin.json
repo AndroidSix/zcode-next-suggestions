@@ -1,0 +1,16 @@
+{
+  "name": "zcode-next-suggestions",
+  "version": "0.1.0",
+  "description": "Suggest up to 3 next prompts after a turn, then continue with /next N.",
+  "author": {
+    "name": "AndroidSix",
+    "url": "https://github.com/AndroidSix"
+  },
+  "homepage": "https://github.com/AndroidSix/zcode-next-suggestions",
+  "repository": "https://github.com/AndroidSix/zcode-next-suggestions",
+  "license": "MIT",
+  "keywords": ["zcode", "suggestions", "next", "productivity"],
+  "skills": "./skills",
+  "commands": "./commands",
+  "hooks": "./hooks/hooks.json"
+}

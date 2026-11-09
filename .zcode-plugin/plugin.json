@@ -1,7 +1,7 @@
 {
   "name": "zcode-next-suggestions",
-  "version": "0.1.0",
-  "description": "Suggest up to 3 next prompts after a turn, then continue with /next N.",
+  "version": "0.2.0",
+  "description": "Session sidebar chips for next prompts: click to fill composer context or send.",
   "author": {
     "name": "AndroidSix",
     "url": "https://github.com/AndroidSix"
@@ -9,8 +9,35 @@
   "homepage": "https://github.com/AndroidSix/zcode-next-suggestions",
   "repository": "https://github.com/AndroidSix/zcode-next-suggestions",
   "license": "MIT",
-  "keywords": ["zcode", "suggestions", "next", "productivity"],
+  "keywords": ["zcode", "suggestions", "next", "ui-plugin", "productivity"],
   "skills": "./skills",
   "commands": "./commands",
-  "hooks": "./hooks/hooks.json"
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": {
+    "app": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/mcp/server.mjs"],
+      "cwd": "${ZCODE_PROJECT_DIR}",
+      "env": {
+        "ZCODE_WORKSPACE_ROOT": "${ZCODE_PROJECT_DIR}",
+        "ZCODE_PLUGIN_DATA": "${ZCODE_PLUGIN_DATA}"
+      }
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "suggestions",
+        "title": {
+          "en": "Next Suggestions",
+          "zh-CN": "下一步建议"
+        },
+        "icon": "sparkles",
+        "server": "app",
+        "resourceUri": "ui://zcode-next-suggestions/panel.html",
+        "availability": "session"
+      }
+    ]
+  }
 }

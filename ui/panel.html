@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>下一步建议</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7f8;
+        --card: #ffffff;
+        --text: #1f2328;
+        --muted: #656d76;
+        --border: #d0d7de;
+        --accent: #0969da;
+        --accent-soft: #ddf4ff;
+        --danger: #cf222e;
+        --radius: 12px;
+        --shadow: 0 1px 2px rgba(31, 35, 40, 0.06);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          "PingFang SC",
+          "Noto Sans CJK SC",
+          sans-serif;
+      }
+      html[data-theme="dark"] {
+        --bg: #0d1117;
+        --card: #161b22;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --border: #30363d;
+        --accent: #2f81f7;
+        --accent-soft: #13233a;
+        --danger: #f85149;
+        --shadow: none;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      main {
+        padding: 12px;
+        display: grid;
+        gap: 12px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 650;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 10px;
+        display: grid;
+        gap: 8px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      button,
+      .chip {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      button:disabled,
+      .chip:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      .chip {
+        display: grid;
+        gap: 6px;
+        width: 100%;
+        border-radius: 12px;
+        text-align: left;
+        padding: 10px 12px;
+        background: var(--accent-soft);
+        border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+      }
+      .chip strong {
+        font-size: 12px;
+        color: var(--accent);
+      }
+      .actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .actions button {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
+      .status {
+        min-height: 1.2em;
+        white-space: pre-wrap;
+      }
+      .mode {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 12px;
+      }
+      .empty {
+        padding: 16px 8px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>下一步建议</h1>
+        <span id="meta" class="muted">未连接</span>
+      </header>
+
+      <section class="card">
+        <div class="mode">
+          <label>
+            <input id="sendMode" type="checkbox" />
+            点击后直接发送（默认只写入输入区上下文）
+          </label>
+        </div>
+        <div class="row">
+          <button id="refreshBtn" type="button">刷新</button>
+          <button id="clearBtn" type="button">清空</button>
+          <button id="openBtn" type="button" class="primary">重新打开面板</button>
+        </div>
+        <div id="status" class="status muted">等待建议…</div>
+      </section>
+
+      <section id="list" class="card"></section>
+    </main>
+
+    <script>
+      const listEl = document.getElementById("list");
+      const statusEl = document.getElementById("status");
+      const metaEl = document.getElementById("meta");
+      const sendModeEl = document.getElementById("sendMode");
+      const refreshBtn = document.getElementById("refreshBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const openBtn = document.getElementById("openBtn");
+
+      let suggestions = [];
+      let busy = false;
+
+      function applyTheme() {
+        const theme = window.zcode?.theme || "light";
+        document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+      }
+
+      function setStatus(text, isError = false) {
+        statusEl.textContent = text || "";
+        statusEl.style.color = isError ? "var(--danger)" : "var(--muted)";
+      }
+
+      function render() {
+        listEl.innerHTML = "";
+        if (!suggestions.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty muted";
+          empty.textContent = "暂无建议。对话有进展后，Agent 会写入这里。";
+          listEl.appendChild(empty);
+          return;
+        }
+
+        suggestions.forEach((text, index) => {
+          const chip = document.createElement("div");
+          chip.className = "chip";
+
+          const title = document.createElement("strong");
+          title.textContent = `建议 ${index + 1}`;
+
+          const body = document.createElement("div");
+          body.textContent = text;
+
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const fillBtn = document.createElement("button");
+          fillBtn.type = "button";
+          fillBtn.textContent = "写入输入区";
+          fillBtn.onclick = () => useSuggestion(text, "fill");
+
+          const sendBtn = document.createElement("button");
+          sendBtn.type = "button";
+          sendBtn.className = "primary";
+          sendBtn.textContent = "直接发送";
+          sendBtn.onclick = () => useSuggestion(text, "send");
+
+          actions.append(fillBtn, sendBtn);
+          chip.append(title, body, actions);
+          listEl.appendChild(chip);
+        });
+      }
+
+      async function ensureReady() {
+        if (!window.zcode) throw new Error("宿主未注入 window.zcode");
+        if (typeof window.zcode.ready === "function") await window.zcode.ready();
+        applyTheme();
+        metaEl.textContent = window.zcode.hostInfo?.name
+          ? `已连接 · ${window.zcode.hostInfo.name}`
+          : "已连接";
+      }
+
+      function extractSuggestions(payload) {
+        const structured = payload?.structuredContent;
+        if (Array.isArray(structured?.suggestions)) return structured.suggestions;
+        const fromToolOutput = window.zcode?.toolOutput;
+        if (fromToolOutput && Array.isArray(fromToolOutput.suggestions))
+          return fromToolOutput.suggestions;
+        return [];
+      }
+
+      async function refresh() {
+        if (busy) return;
+        busy = true;
+        refreshBtn.disabled = true;
+        try {
+          await ensureReady();
+          const result = await window.zcode.callTool("next_suggestions_get", {});
+          if (result?.isError) throw new Error("读取建议失败");
+          suggestions = extractSuggestions(result).filter(
+            (item) => typeof item === "string" && item.trim(),
+          );
+          render();
+          setStatus(
+            suggestions.length
+              ? `共 ${suggestions.length} 条。默认「写入输入区」会挂到下一轮上下文，不会立刻发送。`
+              : "暂无建议。",
+          );
+        } catch (err) {
+          setStatus(String(err?.message || err), true);
+        } finally {
+          busy = false;
+          refreshBtn.disabled = false;
+          notifyHeight();
+        }
+      }
+
+      async function useSuggestion(text, mode) {
+        try {
+          await ensureReady();
+          const send = mode === "send" || sendModeEl.checked;
+          if (send) {
+            if (typeof window.zcode.sendFollowUpMessage !== "function") {
+              throw new Error("当前宿主不支持 sendFollowUpMessage");
+            }
+            await window.zcode.sendFollowUpMessage({ prompt: text });
+            setStatus("已请求发送该建议。");
+            return;
+          }
+          if (typeof window.zcode.updateModelContext !== "function") {
+            throw new Error("当前宿主不支持 updateModelContext");
+          }
+          await window.zcode.updateModelContext({
+            content: [{ type: "text", text }],
+            structuredContent: {
+              source: "zcode-next-suggestions",
+              suggestion: text,
+            },
+          });
+          setStatus("已写入输入区上下文（可删，不会自动发送）。");
+        } catch (err) {
+          setStatus(String(err?.message || err), true);
+        }
+      }
+
+      async function clearSuggestions() {
+        try {
+          await ensureReady();
+          await window.zcode.callTool("next_suggestions_clear", {});
+          suggestions = [];
+          render();
+          setStatus("已清空。");
+        } catch (err) {
+          setStatus(String(err?.message || err), true);
+        } finally {
+          notifyHeight();
+        }
+      }
+
+      async function openPanel() {
+        try {
+          await ensureReady();
+          await window.zcode.callTool("next_suggestions_open", {});
+          await refresh();
+        } catch (err) {
+          setStatus(String(err?.message || err), true);
+        }
+      }
+
+      function notifyHeight() {
+        try {
+          window.zcode?.notifyIntrinsicHeight?.(document.documentElement.scrollHeight);
+        } catch {
+          /* ignore */
+        }
+      }
+
+      function syncFromHostToolOutput() {
+        const output = window.zcode?.toolOutput;
+        if (output && Array.isArray(output.suggestions)) {
+          suggestions = output.suggestions.filter(
+            (item) => typeof item === "string" && item.trim(),
+          );
+          render();
+          setStatus(
+            suggestions.length ? `已从工具结果更新 ${suggestions.length} 条。` : "暂无建议。",
+          );
+          notifyHeight();
+        }
+      }
+
+      refreshBtn.addEventListener("click", () => void refresh());
+      clearBtn.addEventListener("click", () => void clearSuggestions());
+      openBtn.addEventListener("click", () => void openPanel());
+
+      (async () => {
+        try {
+          await ensureReady();
+          if (typeof window.zcode.subscribe === "function") {
+            window.zcode.subscribe(() => {
+              applyTheme();
+              syncFromHostToolOutput();
+            });
+          }
+          syncFromHostToolOutput();
+          await refresh();
+          setInterval(() => void refresh(), 4000);
+        } catch (err) {
+          setStatus(String(err?.message || err), true);
+          render();
+        }
+      })();
+    </script>
+  </body>
+</html>
